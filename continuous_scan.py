@@ -12,7 +12,7 @@ from bleak.backends.scanner import AdvertisementData
 async def cont_scan(timeout:int=16, refresh:int=2, *grep:str):
     '''
     Every <refresh> seconds, return all detected BT devices as list of class BLEDevice objects
-    //device means MAC addresses + device name
+    //device means BLEDevice as MAC addresses + device name
     
     Parameters
     ----------
@@ -35,10 +35,12 @@ async def cont_scan(timeout:int=16, refresh:int=2, *grep:str):
     '''
     
     stop_event = asyncio.Event()
+    devices = []
         
     def callback(device, advertisement_data):
-        print("i smell a device!")
-        print(device)
+        #print("i smell a device!")
+        #print(device)
+        devices.append(device)
         return device
 
     
@@ -46,6 +48,8 @@ async def cont_scan(timeout:int=16, refresh:int=2, *grep:str):
         #await scanner.discover(timeout=refresh)
         await asyncio.sleep(refresh)
         stop_event.set()
+    
+    return devices
 
 if __name__ == '__main__':
     asyncio.run(cont_scan())

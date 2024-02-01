@@ -9,8 +9,9 @@ import nest_asyncio
 nest_asyncio.apply()
 
 from bleak import BleakScanner
+from continuous_scan import cont_scan
 
-import bt_test
+#import bt_test
 
 #muses = list_muses()
 #stream(muses[0]['address'])
@@ -22,13 +23,15 @@ class StdWindow(QMainWindow):
         '''
         super().__init__()
         self.size = [800, 500]  # Window size
+        self.appTimer = QTimer()
+        self.appTimer.start(100)
 
         # ---- TITLE ---- #
         self.setWindowTitle("EXPLODE PANCAKES")
         self.setFixedSize(*self.size)
+        self.welcome_prompt()
 
         self.show()
-        self.welcome_prompt()
 
     def welcome_prompt(self):
         '''
@@ -52,27 +55,31 @@ class StdWindow(QMainWindow):
 
         # LIST HEADSETS (all BT devices)
 
-        display_muses = QListWidget()
-        display_muses.addItems(["apple", "banana"])
-        display_muses.move(20, 100)
+        display_muses = QListWidget(self)
+        # CONT list update
+        self.appTimer.timeout.connect(display_muses.update)
+        devices = map(str, asyncio.run(cont_scan()))
+        display_muses.addItems(devices)
+        display_muses.setFixedSize(200, 700)
+        display_muses.move(20, 200)
         display_muses.show()
 
         ## ---- INITIAL BUTTON ---- #
-        #button = QPushButton("Press me", self)
-        #button.setFixedSize(200, 100)
-        #button.show()
+        button = QPushButton("Press me", self)
+        button.setFixedSize(200, 100)
+        button.clicked.connect(self.close)
+        button.show()
 
 
-        #self.setCentralWidget(button)
+        self.setCentralWidget(button)
         #self.setCentralWidget(welcome)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
+    app.aboutToQuit.connect(app.deleteLater)
     appWindow = StdWindow()
 
     with open("style.css", "r") as styleSheet:
         app.setStyleSheet(styleSheet.read())
-        
-    asyncio.run(bt_test.main())
 
     sys.exit(app.exec())
