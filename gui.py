@@ -4,21 +4,6 @@ from PyQt6.QtWidgets import *
 from PyQt6.QtCore import *
 from PyQt6.QtGui import *
 
-import asyncio
-import nest_asyncio
-nest_asyncio.apply()
-
-import brainflow
-
-#from qasync import QEventLoop, QApplication
-
-from bleak import BleakScanner
-#from continuous_scan import scanner
-
-#import bt_test
-
-#muses = list_muses()
-#stream(muses[0]['address'])
 
 class StdWindow(QMainWindow):
     def __init__(self):
@@ -58,23 +43,17 @@ class StdWindow(QMainWindow):
         welcome.show()
 
         # LIST HEADSETS (all BT devices)
-
         display_muses = QListWidget(self)
         
         # CONT list update
-        '''
-        BT_scanner = scanner()
-        event_loop.run_until_complete(BT_scanner.cont_scan(timeout=2))
-        found_devices = BT_scanner.devices
-        display_muses.addItems(map(str, found_devices))
-        '''
-
+        
         def list_update():
             #new_devices = [device for device in list_muses() if device not in found_devices]
             found_devices.update(new_devices)
             display_muses.addItems(map(str, new_devices))
             display_muses.update
-            
+            print("updating")
+        
         self.appTimer.timeout.connect(list_update)
         
         display_muses.setFixedSize(200, 700)
@@ -94,7 +73,6 @@ class StdWindow(QMainWindow):
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     
-
     app.aboutToQuit.connect(app.deleteLater)
     appWindow = StdWindow()
     
