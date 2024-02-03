@@ -39,13 +39,5 @@ class CLI:
         self.args = args
         self.params = params
 
-    def get_args(self):
-        """Return user/default specified arguments"""
-        return self.args
-    
-    def get_params(self):
-        """Return parameters"""
-        return self.params
-
 if __name__ == "__main__":
     cli = CLI()

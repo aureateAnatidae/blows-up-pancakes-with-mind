@@ -1,9 +1,8 @@
-from muselsl import stream, list_muses
 import sys
-from PyQt6.QtWidgets import *
-from PyQt6.QtCore import *
-from PyQt6.QtGui import *
-
+from PySide6.QtWidgets import *
+from PySide6.QtCore import *
+from PySide6.QtGui import *
+from PySide6.QtBluetooth import *
 
 class StdWindow(QMainWindow):
     def __init__(self):
@@ -21,10 +20,13 @@ class StdWindow(QMainWindow):
         self.welcome_prompt()
 
         self.show()
-
+        
     def welcome_prompt(self):
         '''
-        Welcomes user with welcome message, prompts user to connect muse headset from list of headsets detected.
+        Welcome user with welcome message, prompt user to connect muse headset from list of headsets detected.
+
+        Act as a title screen.
+        Displays a continuously updating list of all nearby Bluetooth devices.
 
         Returns
         -------
@@ -43,26 +45,26 @@ class StdWindow(QMainWindow):
         welcome.show()
 
         # LIST HEADSETS (all BT devices)
-        display_muses = QListWidget(self)
-        
-        # CONT list update
-        
-        def list_update():
-            #new_devices = [device for device in list_muses() if device not in found_devices]
-            found_devices.update(new_devices)
-            display_muses.addItems(map(str, new_devices))
-            display_muses.update
-            print("updating")
-        
-        self.appTimer.timeout.connect(list_update)
-        
-        display_muses.setFixedSize(200, 700)
-        display_muses.move(20, 200)
-        display_muses.show()
+        self.display_muses = QListWidget(self)
+        self.display_muses.setFixedSize(200, 700)
+        self.display_muses.move(20, 200)
+        self.display_muses.show()
+
+        # UPDATE list of BT devices
+        def list_update(bt_device_info):
+            self.display_muses.addItem(bt_device_info.name())
+            return
+
+        # BEGIN Bluetooth scan
+        discoveryAgent = QBluetoothDeviceDiscoveryAgent(self)
+        discoveryAgent.setLowEnergyDiscoveryTimeout(0)
+        discoveryAgent.deviceDiscovered.connect(list_update)
+        discoveryAgent.start()
 
         ## ---- INITIAL BUTTON ---- #
         button = QPushButton("Press me", self)
         button.setFixedSize(200, 100)
+        
         button.clicked.connect(self.close)
         button.show()
 

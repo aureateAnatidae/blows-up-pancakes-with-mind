@@ -1,6 +1,6 @@
 """Main program file"""
 # thanks to ChillOutCharles' BrainFlowsIntoVRChat and community
-# thanks to the muselsl project
+# thanks to the muselsl project. yo dr barachant save the muselsl project.
 
 import argparse
 import time
@@ -16,11 +16,9 @@ def main():
     BoardShim.set_log_level(LogLevels.LEVEL_DEBUG.value)
     
     cli = CLI()
-    args = cli.get_args()
-    params = cli.get_params()
     ## create board, begin stream
 
-    board = BoardShim(args.board_id, params)
+    board = BoardShim(cli.args.board_id, cli.params)
     board.prepare_session()
     board.start_stream()
     print("streaming")
