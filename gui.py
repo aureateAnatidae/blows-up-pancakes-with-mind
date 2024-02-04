@@ -4,12 +4,15 @@ from PySide6.QtCore import *
 from PySide6.QtGui import *
 from PySide6.QtBluetooth import *
 
-class StdWindow(QMainWindow):
+#from board.py import Board
+
+class Window(QMainWindow):
     def __init__(self):
         '''
         standard window to be used
         '''
         super().__init__()
+        self.p = None
         self.size = [800, 500]  # Window size
         self.appTimer = QTimer(self)
         self.appTimer.start(1000)  # 1 sec
@@ -20,6 +23,22 @@ class StdWindow(QMainWindow):
         self.welcome_prompt()
 
         self.show()
+        
+
+    def cli(self):
+        if self.p is None:
+            self.p = QProcess()
+            self.p.readyReadStandardOutput.connect(self.triggerprint)
+            self.p.finished.connect(self.process_finished)
+            self.p.start("python", ['cli.py'])
+
+    def triggerprint(self):
+        print(self.p.readAllStandardOutput)
+
+    def process_finished(self):
+        print("Process finished")
+        self.p = None
+
         
     def welcome_prompt(self):
         '''
@@ -58,8 +77,8 @@ class StdWindow(QMainWindow):
         # BEGIN Bluetooth scan
         discoveryAgent = QBluetoothDeviceDiscoveryAgent(self)
         discoveryAgent.setLowEnergyDiscoveryTimeout(0)
-        discoveryAgent.deviceDiscovered.connect(list_update)
         discoveryAgent.start()
+        discoveryAgent.deviceDiscovered.connect(list_update)
 
         ## ---- INITIAL BUTTON ---- #
         button = QPushButton("Press me", self)
@@ -68,17 +87,25 @@ class StdWindow(QMainWindow):
         button.clicked.connect(self.close)
         button.show()
 
-
+        self.cli()
         self.setCentralWidget(button)
         #self.setCentralWidget(welcome)
 
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    
-    app.aboutToQuit.connect(app.deleteLater)
-    appWindow = StdWindow()
-    
-    with open("style.css", "r") as styleSheet:
-        app.setStyleSheet(styleSheet.read())
+class GUI():
+    def __init__(self):
+        self.app = QApplication(sys.argv)
+        
+        self.app.aboutToQuit.connect(self.app.deleteLater)
+        appWindow = Window()
+        
+        with open("style.css", "r") as styleSheet:
+            self.app.setStyleSheet(styleSheet.read())
 
-    sys.exit(app.exec())
+        self.__exit__()
+
+    def __exit__(self):
+        sys.exit(self.app.exec())
+
+if __name__ == "__main__":
+    gui = GUI()
+    gui.__exit__()
