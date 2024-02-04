@@ -1,10 +1,11 @@
 """CLI grabs all program call arguments"""
 
 import argparse
+from sys import stdin, stdout
 
 from brainflow.board_shim import BrainFlowInputParams, BoardIds
 
-def cli(self):
+def cli():
     parser = argparse.ArgumentParser()
     # use docs to check which parameters are required for specific board, e.g. for Cyton - set serial port
     parser.add_argument('--timeout', type=int, help='timeout for device discovery or connection', required=False,
@@ -37,4 +38,4 @@ def cli(self):
     return args, params
 
 if __name__ == "__main__":
-    cli()
+    stdout.write(str(cli()))

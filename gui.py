@@ -26,29 +26,48 @@ class Window(QMainWindow):
         self.show()
         
     ### QProcesses ###
-    def cli(self):
+    def cli(self, listObject):
         """Janky solve - get args and params from cli.py, specifying only --board-id"""
         if self.process is None:
             self.process = QProcess()
             self.process.readyReadStandardOutput.connect(self.triggerprint)
             self.process.finished.connect(self.process_finished)
+
+            device_name = listObject.text()
+            mac_address = None
+            print("Selecting")
+            print(device_name)
+            #print(self.discoveryAgent.discoveredDevices())
+            for device in self.discoveryAgent.discoveredDevices():
+                print("Am I here?")
+                print(device.name())
+                if device_name == device.name():
+                    print("WATASHI GA KITA!")
+                    mac_address = device.address()
+                    self.process.setArguments([f"--mac-address {mac_address}"])
+                    break
             self.process.start("python", ["cli.py"])
+            print(mac_address.toString())
+            
 
     def triggerprint(self):
-        print(self.process.readAllStandardOutput)
+        print("ha! gayyyyy")
+        data = self.process.readAllStandardOutput()
+        stdout = bytes(data).decode("utf8")
+        print(stdout)
 
     def process_finished(self):
         print("Process finished")
         self.process = None
 
-        
+    ### MAIN SEQUENCE FUNCTIONS ###
     def welcome_prompt(self):
-        '''
+        """
         Welcome user with welcome message, prompt user to connect muse headset from list of headsets detected.
 
         Act as a title screen.
         Displays a continuously updating list of all nearby Bluetooth devices.
-        '''
+        """
         # ---- WELCOME AND LIST HEADSETS ---- #
 
         # WELCOME
@@ -61,21 +80,28 @@ class Window(QMainWindow):
         welcome.show()
 
         # LIST HEADSETS (all BT devices)
-        self.display_muses = QListWidget(self)
-        self.display_muses.setFixedSize(200, 700)
-        self.display_muses.move(20, 200)
-        self.display_muses.show()
+        self.displayMuses = QListWidget(self)
+        self.displayMuses.setFixedSize(200, 700)
+        self.displayMuses.move(20, 200)
+        self.displayMuses.show()
+
+        # Dict of MAC addresses of each device found
+        #self.bt_list = {}
 
         # UPDATE list of BT devices
         def list_update(bt_device_info):
-            self.display_muses.addItem(bt_device_info.name())
-            return
+            """Add BT device name to list display widget. Returns None."""
+            self.displayMuses.addItem(bt_device_info.name())
+            #self.bt_list[bt_device_info.name()] = bt_device_info.address()
 
         # BEGIN Bluetooth scan
-        discoveryAgent = QBluetoothDeviceDiscoveryAgent(self)
-        discoveryAgent.setLowEnergyDiscoveryTimeout(0)
-        discoveryAgent.start()
-        discoveryAgent.deviceDiscovered.connect(list_update)
+        self.discoveryAgent = QBluetoothDeviceDiscoveryAgent(self)
+        self.discoveryAgent.setLowEnergyDiscoveryTimeout(0)
+        self.discoveryAgent.start()
+        self.discoveryAgent.deviceDiscovered.connect(list_update)
+
+        # On displayMuses item select, connect to the device with mac address.
+        self.displayMuses.itemDoubleClicked.connect(self.cli)
 
         ## ---- INITIAL BUTTON ---- #
         exitButton = QPushButton("X", self)
@@ -85,7 +111,6 @@ class Window(QMainWindow):
         exitButton.clicked.connect(self.close)
         exitButton.show()
 
-        self.cli()
         #self.setCentralWidget(welcome)
 
 class GUI():
