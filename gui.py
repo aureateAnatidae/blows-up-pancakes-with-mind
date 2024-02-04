@@ -7,12 +7,13 @@ from PySide6.QtBluetooth import *
 #from board.py import Board
 
 class Window(QMainWindow):
+    """Window class encapsulating all program function. Can be treated as __main__ script."""
     def __init__(self):
-        '''
-        standard window to be used
-        '''
+        """
+        Initialize main window
+        """
         super().__init__()
-        self.p = None
+        self.process = None
         self.size = [800, 500]  # Window size
         self.appTimer = QTimer(self)
         self.appTimer.start(1000)  # 1 sec
@@ -24,20 +25,21 @@ class Window(QMainWindow):
 
         self.show()
         
-
+    ### QProcesses ###
     def cli(self):
-        if self.p is None:
-            self.p = QProcess()
-            self.p.readyReadStandardOutput.connect(self.triggerprint)
-            self.p.finished.connect(self.process_finished)
-            self.p.start("python", ['cli.py'])
+        """Janky solve - get args and params from cli.py, specifying only --board-id"""
+        if self.process is None:
+            self.process = QProcess()
+            self.process.readyReadStandardOutput.connect(self.triggerprint)
+            self.process.finished.connect(self.process_finished)
+            self.process.start("python", ["cli.py"])
 
     def triggerprint(self):
-        print(self.p.readAllStandardOutput)
+        print(self.process.readAllStandardOutput)
 
     def process_finished(self):
         print("Process finished")
-        self.p = None
+        self.process = None
 
         
     def welcome_prompt(self):
@@ -46,11 +48,6 @@ class Window(QMainWindow):
 
         Act as a title screen.
         Displays a continuously updating list of all nearby Bluetooth devices.
-
-        Returns
-        -------
-        MAC : str
-            MAC address of muse headset to connect to
         '''
         # ---- WELCOME AND LIST HEADSETS ---- #
 
@@ -81,14 +78,14 @@ class Window(QMainWindow):
         discoveryAgent.deviceDiscovered.connect(list_update)
 
         ## ---- INITIAL BUTTON ---- #
-        button = QPushButton("Press me", self)
-        button.setFixedSize(200, 100)
+        exitButton = QPushButton("X", self)
+        exitButton.setFixedSize(50, 20)
+        exitButton.move(750, 0)
         
-        button.clicked.connect(self.close)
-        button.show()
+        exitButton.clicked.connect(self.close)
+        exitButton.show()
 
         self.cli()
-        self.setCentralWidget(button)
         #self.setCentralWidget(welcome)
 
 class GUI():
