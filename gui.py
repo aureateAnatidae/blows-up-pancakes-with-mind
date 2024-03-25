@@ -4,7 +4,19 @@ from PySide6.QtCore import *
 from PySide6.QtGui import *
 from PySide6.QtBluetooth import *
 
-#from board.py import Board
+from board import Board, connect
+
+class Worker(QRunnable):
+    """Generic QRunnable Worker template"""
+    def __init__(self, fn, *args, **kwargs):
+        super(Worker, self).__init__()
+        self.fn = fn
+        self.args = args
+        self.kwargs = kwargs
+
+    def run(self):
+        self.fn(*self.args, **self.kwargs)
+
 
 class Window(QMainWindow):
     """Window class encapsulating all program function. Can be treated as __main__ script."""
@@ -13,7 +25,6 @@ class Window(QMainWindow):
         Initialize main window
         """
         super().__init__()
-        self.process = None
         self.size = [800, 500]  # Window size
         self.appTimer = QTimer(self)
         self.appTimer.start(1000)  # 1 sec
@@ -25,40 +36,10 @@ class Window(QMainWindow):
 
         self.show()
         
-    ### QProcesses ###
-    def cli(self, listObject):
-        """Janky solve - get args and params from cli.py, specifying only --board-id"""
-        if self.process is None:
-            self.process = QProcess()
-            self.process.readyReadStandardOutput.connect(self.triggerprint)
-            self.process.finished.connect(self.process_finished)
-
-            device_name = listObject.text()
-            mac_address = None
-            print("Selecting")
-            print(device_name)
-            #print(self.discoveryAgent.discoveredDevices())
-            for device in self.discoveryAgent.discoveredDevices():
-                print("Am I here?")
-                print(device.name())
-                if device_name == device.name():
-                    print("WATASHI GA KITA!")
-                    mac_address = device.address()
-                    self.process.setArguments([f"--mac-address {mac_address}"])
-                    break
-            self.process.start("python", ["cli.py"])
-            print(mac_address.toString())
-            
-
-    def triggerprint(self):
-        print("ha! gayyyyy")
-        data = self.process.readAllStandardOutput()
-        stdout = bytes(data).decode("utf8")
-        print(stdout)
-
-    def process_finished(self):
-        print("Process finished")
-        self.process = None
+    ### QRunnables for QThreadPool ###
+    ### >>NESTED CLASSES<<
+    """To use any of these async. call a QThreadPool instance as self.<my_q_thread_pool>.start(<my_q_runnable>)"""
+    
 
     ### MAIN SEQUENCE FUNCTIONS ###
     def welcome_prompt(self):
@@ -68,8 +49,6 @@ class Window(QMainWindow):
         Act as a title screen.
         Displays a continuously updating list of all nearby Bluetooth devices.
         """
-        # ---- WELCOME AND LIST HEADSETS ---- #
-
         # WELCOME
         welcome = QLabel("Welcome to pancake exploder!\n"
                          "Make sure your Bluetooth is enabled!\n"
@@ -81,18 +60,23 @@ class Window(QMainWindow):
 
         # LIST HEADSETS (all BT devices)
         self.displayMuses = QListWidget(self)
-        self.displayMuses.setFixedSize(200, 700)
+        self.displayMuses.setFixedSize(200, 200)
         self.displayMuses.move(20, 200)
         self.displayMuses.show()
+
+        self.scroll_bar = QScrollBar(self)
+        self.displayMuses.setVerticalScrollBar(self.scroll_bar)
 
         # Dict of MAC addresses of each device found
         #self.bt_list = {}
 
-        # UPDATE list of BT devices
+        # UPDATE list of BT devices if not already found
+        discovered = {}
         def list_update(bt_device_info):
             """Add BT device name to list display widget. Returns None."""
-            self.displayMuses.addItem(bt_device_info.name())
-            #self.bt_list[bt_device_info.name()] = bt_device_info.address()
+            if bt_device_info.name() not in discovered:
+                discovered[bt_device_info.name()] = bt_device_info.address()
+                self.displayMuses.addItem(bt_device_info.name())
 
         # BEGIN Bluetooth scan
         self.discoveryAgent = QBluetoothDeviceDiscoveryAgent(self)
@@ -101,7 +85,12 @@ class Window(QMainWindow):
         self.discoveryAgent.deviceDiscovered.connect(list_update)
 
         # On displayMuses item select, connect to the device with mac address.
-        self.displayMuses.itemDoubleClicked.connect(self.cli)
+        self.threadpool = QThreadPool()
+
+        def gotime(item):
+            worker = Worker(connect, mac_address=item.text())
+            self.threadpool.start(worker)
+        self.displayMuses.itemDoubleClicked.connect(gotime)
 
         ## ---- INITIAL BUTTON ---- #
         exitButton = QPushButton("X", self)

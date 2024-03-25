@@ -8,16 +8,11 @@ import time
 from brainflow.board_shim import BoardShim
 from brainflow.data_filter import DataFilter, LogLevels
 
-from cli import CLI
 from gui import GUI
 
 def main():
-    
     # Open GUI main
     gui = GUI()
-    
-    cli = CLI()
-    ## create board, begin stream
 
     
 
