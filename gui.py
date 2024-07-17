@@ -87,10 +87,12 @@ class Window(QMainWindow):
         # On displayMuses item select, connect to the device with mac address.
         self.threadpool = QThreadPool()
 
-        def gotime(item):
-            worker = Worker(connect, mac_address=item.text())
-            self.threadpool.start(worker)
-        self.displayMuses.itemDoubleClicked.connect(gotime)
+        def connect_to_device(item):
+            connecting.show()
+            connection_worker = Worker(connect, mac_address=discovered.get(item.text()).toString())
+            self.threadpool.start(connection_worker)
+            connecting.hide()
+        self.displayMuses.itemDoubleClicked.connect(connect_to_device)
 
         ## ---- INITIAL BUTTON ---- #
         exitButton = QPushButton("X", self)
@@ -99,6 +101,13 @@ class Window(QMainWindow):
         
         exitButton.clicked.connect(self.close)
         exitButton.show()
+
+        # CONNECTING...
+        connecting = QLabel("Connecting...", self)
+        connecting.setFixedSize(*self.size)
+        connecting.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
+        connecting.move(500, 200)
+        
 
         #self.setCentralWidget(welcome)
 
