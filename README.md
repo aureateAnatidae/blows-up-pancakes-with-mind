@@ -5,3 +5,13 @@ That's right, you're gonna __blow up pancakes with mind__. *Ma fuckin pancakes*
 
 ## Modeled after this meme
 https://knowyourmeme.com/memes/blows-up-pancakes-with-mind
+
+
+
+
+# Troubleshooting
+
+## SER_PORT_ERROR = 3
+
+It is most likely that the program doesn't have the permissions configured to open the serial port.
+You may run it as sudo or add your user to the group `Gid` listed in `stat <such_a_serial_port>`.
