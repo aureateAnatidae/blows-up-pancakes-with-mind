@@ -14,8 +14,5 @@ def main():
     # Open GUI main
     gui = GUI()
 
-    
-
-
 if __name__ == "__main__":
     main()

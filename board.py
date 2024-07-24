@@ -7,12 +7,15 @@ from brainflow.exit_codes import BrainFlowError
 from PySide6.QtCore import *
 import time
 
+import analysis
+
 class Board(BoardShim):
     def __init__(self, mac_address):
         """Inherit BoardShim, initializes with Brainflow setup commands first."""
         params = BrainFlowInputParams()
         params.mac_address = mac_address
-        super().__init__(board_id=41, input_params=params)
+        params.serial_port = "/dev/ttyACM0"
+        super().__init__(BoardIds.MUSE_2016_BLED_BOARD, params)
 
         self.enable_dev_board_logger()
         DataFilter.enable_data_logger()
@@ -23,9 +26,8 @@ class Board(BoardShim):
         self.prepare_session()
         self.start_stream()
         time.sleep(1)
-        data = self.get_current_board_data(256)
-        print(data)
-    
+        return self.is_prepared()
+
     def disconnect(self):
         """Disonnect from active stream."""
         self.release_session()
@@ -36,7 +38,7 @@ def connect(mac_address):
     print("Connecting to " + str(mac_address))
     board = Board(mac_address)
     board.connect()
-    
+
 if __name__ == "__main__":
     board = Board("0055DAB0C515")
     board.prepare_session()

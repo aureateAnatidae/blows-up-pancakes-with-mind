@@ -5,6 +5,7 @@ from PySide6.QtGui import *
 from PySide6.QtBluetooth import *
 
 from board import Board, connect
+import analysis
 
 class Worker(QRunnable):
     """Generic QRunnable Worker template"""
@@ -13,9 +14,21 @@ class Worker(QRunnable):
         self.fn = fn
         self.args = args
         self.kwargs = kwargs
+        self.signals = WorkerSignals()
 
     def run(self):
-        self.fn(*self.args, **self.kwargs)
+        try:
+            result = self.fn(*self.args, **self.kwargs)
+            self.signals.result.emit(result)
+        finally:
+            self.signals.finished.emit()
+
+class WorkerSignals(QObject):
+    """With thanks to https://www.pythonguis.com/tutorials/multithreading-pyside6-applications-qthreadpool/
+    Worker signals
+    """
+    result = Signal(object)
+    finished = Signal()
 
 
 class Window(QMainWindow):
@@ -87,12 +100,31 @@ class Window(QMainWindow):
         # On displayMuses item select, connect to the device with mac address.
         self.threadpool = QThreadPool()
 
+        def connecting_showhide(result):
+            if result:  # connection in progress - successfully prepared Board object
+                connecting.show()
+                analysis.Analyzer(self.board).avg_V_over_T(1)
+            else:
+                connecting.hide()  # preparation failed!
+
         def connect_to_device(item):
             connecting.show()
-            connection_worker = Worker(connect, mac_address=discovered.get(item.text()).toString())
+            self.board = Board(mac_address=discovered.get(item.text()).toString())
+            connection_worker = Worker(self.board.connect)
+            connection_worker.signals.result.connect(connecting_showhide)
+            #connection_worker.signals.finished.connect(connecting.hide())
+
             self.threadpool.start(connection_worker)
-            connecting.hide()
+
+        # CONNECTING...
+        connecting = QLabel("Connecting...", self)
+        connecting.setFixedSize(*self.size)
+        connecting.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
+        connecting.move(500, 200)  
+        connecting.hide()
+
         self.displayMuses.itemDoubleClicked.connect(connect_to_device)
+        
 
         ## ---- INITIAL BUTTON ---- #
         exitButton = QPushButton("X", self)
@@ -102,11 +134,7 @@ class Window(QMainWindow):
         exitButton.clicked.connect(self.close)
         exitButton.show()
 
-        # CONNECTING...
-        connecting = QLabel("Connecting...", self)
-        connecting.setFixedSize(*self.size)
-        connecting.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
-        connecting.move(500, 200)
+        
         
 
         #self.setCentralWidget(welcome)
